@@ -33,7 +33,7 @@ module "github_oidc" {
     EOF
   }
 
-  managed_policies = [
+  managed_policy_arns = [
     "arn:aws:iam::aws:policy/AmazonS3FullAccess"
   ]
 }
