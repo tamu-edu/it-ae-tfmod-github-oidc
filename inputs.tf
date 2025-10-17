@@ -32,3 +32,9 @@ variable "tags" {
   description = "A map of tags to add to the role."
   default     = {}
 }
+
+variable "max_session_duration" {
+  type        = number
+  description = "The maximum session duration (in seconds) for the role (can be between 1 hour and 12 hours)."
+  default     = 3600
+}

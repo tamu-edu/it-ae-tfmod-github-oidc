@@ -12,9 +12,9 @@ terraform {
 data "aws_caller_identity" "current" {}
 
 resource "aws_iam_openid_connect_provider" "github" {
-  count           = var.add_oidc_provider ? 1 : 0
-  client_id_list  = ["sts.amazonaws.com"]
-  url             = "https://token.actions.githubusercontent.com"
+  count          = var.add_oidc_provider ? 1 : 0
+  client_id_list = ["sts.amazonaws.com"]
+  url            = "https://token.actions.githubusercontent.com"
   thumbprint_list = [
     "1c58a3a8518e8759bf075b76b750d4f2df264fcd",
     "6938fd4d98bab03faadb97b34396831e3780aea1"
@@ -22,7 +22,7 @@ resource "aws_iam_openid_connect_provider" "github" {
 }
 
 resource "aws_iam_role" "github_actions" {
-  name        = "${var.name}"
+  name        = var.name
   description = "${var.name} role for GitHub Actions to assume"
 
   assume_role_policy = <<-EOF
@@ -57,6 +57,8 @@ resource "aws_iam_role" "github_actions" {
   managed_policy_arns = var.managed_policy_arns
 
   tags = var.tags
+
+  max_session_duration = var.max_session_duration
 }
 
 output "role_arn" {
