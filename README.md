@@ -45,9 +45,8 @@ module "github_oidc" {
 | -- | -- | -- | -- |
 | `name` | The name of the role. | `string` | Required |
 | `subjects` | A list of GitHub subject values. | `list(string)` | Required |
-| `inline_policies` | A map of inline policies to attach to the role. | `map(string)` | Optional |
+| `policies` | A map of policies to create and attach to the role. The key will be used in the policy name. | `map(string)` | Optional |
 | `managed_policy_arns` | A list of managed policies ARNs to attach to the role. | `list(string)` | Optional
-| `add_oidc_provider` | Whether to add the OIDC provider to the account. | `bool` | `true` |
 | `tags` | A map of tags to add to the role. | `map(string)` | Optional |
 
 ## Outputs
