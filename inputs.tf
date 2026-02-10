@@ -17,7 +17,7 @@ variable "policies" {
 
 variable "managed_policy_arns" {
   type        = list(string)
-  description = "A list of AWS managed policies arns to attach to this role."
+  description = "A list of AWS managed policy ARNs to attach to this role."
   default     = []
 }
 
