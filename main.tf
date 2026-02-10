@@ -46,21 +46,18 @@ resource "aws_iam_role" "github_actions" {
     }
   EOF
 
-  dynamic "inline_policy" {
-    for_each = var.inline_policies
-    content {
-      name   = "inline_policy_${inline_policy.key}"
-      policy = inline_policy.value
-    }
-  }
-
-  managed_policy_arns = var.managed_policy_arns
-
   tags = var.tags
 
   max_session_duration = var.max_session_duration
 }
 
+resource "aws_iam_role_policy" "policy" {
+  for_each = var.policies
+
+  name   = "${aws_iam_role.github_actions.name}_${each.key}"
+  role   = aws_iam_role.github_actions.name
+  policy = each.value
+}
 output "role_arn" {
   value = aws_iam_role.github_actions.arn
 }

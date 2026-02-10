@@ -9,9 +9,9 @@ variable "subjects" {
   description = "The list of subjects to allow to assume this role."
 }
 
-variable "inline_policies" {
+variable "policies" {
   type        = map(string)
-  description = "A map of inline policies (JSON) to attach to this role. Keys will be used as the policy name."
+  description = "A map of policies (JSON) to attach to this role. Keys will be used as the policy name."
   default     = {}
 }
 
