@@ -21,12 +21,6 @@ variable "managed_policy_arns" {
   default     = []
 }
 
-variable "add_oidc_provider" {
-  type        = bool
-  description = "Whether to add the OIDC provider for GitHub Actions. Default true"
-  default     = true
-}
-
 variable "tags" {
   type        = map(string)
   description = "A map of tags to add to the role."

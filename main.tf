@@ -11,14 +11,31 @@ terraform {
 
 data "aws_caller_identity" "current" {}
 
+
+# See if the GitHub OIDC provider already exists
+data "aws_iam_openid_connect_provider" "github" {
+  url = "https://token.actions.githubusercontent.com"
+
+  # This will return empty if not found, rather than error
+  count = 1
+}
+
+locals {
+  oidc_provider_exists = length(data.aws_iam_openid_connect_provider.github) > 0 && try(data.aws_iam_openid_connect_provider.github[0].arn, "") != ""
+}
+
+# Only create if it doesn't exist
 resource "aws_iam_openid_connect_provider" "github" {
-  count          = var.add_oidc_provider ? 1 : 0
-  client_id_list = ["sts.amazonaws.com"]
-  url            = "https://token.actions.githubusercontent.com"
-  thumbprint_list = [
-    "1c58a3a8518e8759bf075b76b750d4f2df264fcd",
-    "6938fd4d98bab03faadb97b34396831e3780aea1"
-  ]
+  count = local.oidc_provider_exists ? 0 : 1
+
+  url             = "https://token.actions.githubusercontent.com"
+  client_id_list  = ["sts.amazonaws.com"]
+  thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aea1"]
+}
+
+# Use this output to reference the ARN regardless of creation method
+locals {
+  oidc_provider_arn = local.oidc_provider_exists ? data.aws_iam_openid_connect_provider.github[0].arn : aws_iam_openid_connect_provider.github[0].arn
 }
 
 resource "aws_iam_role" "github_actions" {
@@ -38,7 +55,7 @@ resource "aws_iam_role" "github_actions" {
                 },
                 "Effect":"Allow",
                 "Principal":{
-                    "Federated":"arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/token.actions.githubusercontent.com"
+                    "Federated":"${local.oidc_provider_arn}"
                 }
             }
         ],
