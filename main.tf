@@ -59,11 +59,13 @@ resource "aws_iam_openid_connect_provider" "github" {
 
 locals {
   oidc_provider_arn = local.create_oidc_provider ? aws_iam_openid_connect_provider.github[0].arn : local.oidc_providers_filtered[0]
-  role_name = length(var.name) > 64 ? substr(var.name, 0, 38) : var.name # truncated to 64 characters
+  role_name         = length(var.name) > 64 ? null : var.name 
+  role_name_prefix  = length(var.name) > 64 ? substr(var.name, 0, 38) : null # truncated to 38 characters, max for prefix
 }
 
 resource "aws_iam_role" "github_actions" {
-  name_prefix        = local.role_name
+  name        = local.role_name
+  name_prefix = local.role_name_prefix
   description = "${var.name} role for GitHub Actions to assume"
 
   assume_role_policy = <<-EOF
