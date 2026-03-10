@@ -6,36 +6,59 @@ terraform {
       source  = "hashicorp/aws"
       version = ">= 4.0.0"
     }
+    awscc = {
+      source  = "hashicorp/awscc"
+      version = "1.27.0"
+    }
   }
 }
 
+locals {
+  provider_id = "token.actions.githubusercontent.com"
+  tag_key     = "CreatedByOidcModuleId"
+}
+
+resource "random_uuid" "this" {}
+
 data "aws_caller_identity" "current" {}
 
-
-# See if the GitHub OIDC provider already exists
-data "aws_iam_openid_connect_provider" "github" {
-  url = "https://token.actions.githubusercontent.com"
-
-  # This will return empty if not found, rather than error
-  count = 1
-}
+# See if a GitHub OIDC provider already exists
+data "awscc_iam_oidc_providers" "all" {}
 
 locals {
-  oidc_provider_exists = length(data.aws_iam_openid_connect_provider.github) > 0 && try(data.aws_iam_openid_connect_provider.github[0].arn, "") != ""
+  oidc_providers_filtered = [for id in data.awscc_iam_oidc_providers.all.ids : id if strcontains(id, local.provider_id)]
+  oidc_provider_exists    = length(local.oidc_providers_filtered) > 0
 }
 
-# Only create if it doesn't exist
-resource "aws_iam_openid_connect_provider" "github" {
-  count = local.oidc_provider_exists ? 0 : 1
+# If one does, look it up to get the tags
+data "aws_iam_openid_connect_provider" "existing" {
+  count = local.oidc_provider_exists ? 1 : 0
+  arn   = local.oidc_providers_filtered[0]
+}
 
-  url             = "https://token.actions.githubusercontent.com"
+# If an OIDC provider doesn't exist, we'll create it so it will be owned by this module
+# Otherwise, check if it was created by this module so it stays in scope by a tag
+locals {
+  create_oidc_provider = local.oidc_provider_exists == false ? true : (
+    try(data.aws_iam_openid_connect_provider.existing[0].tags[local.tag_key], "") == random_uuid.this.result
+  )
+}
+
+# Create if it doesn't exist, or if this module owns it
+resource "aws_iam_openid_connect_provider" "github" {
+  count = local.create_oidc_provider ? 1 : 0
+
+  url             = "https://${local.provider_id}"
   client_id_list  = ["sts.amazonaws.com"]
   thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aea1"]
+
+  tags = {
+    CreatedByOidcModuleId = random_uuid.this.result
+  }
 }
 
-# Use this output to reference the ARN regardless of creation method
 locals {
-  oidc_provider_arn = local.oidc_provider_exists ? data.aws_iam_openid_connect_provider.github[0].arn : aws_iam_openid_connect_provider.github[0].arn
+  oidc_provider_arn = local.create_oidc_provider ? aws_iam_openid_connect_provider.github[0].arn : local.oidc_providers_filtered[0]
 }
 
 resource "aws_iam_role" "github_actions" {
